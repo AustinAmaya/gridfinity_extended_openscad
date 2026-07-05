@@ -9,3 +9,4 @@ generated
 # local render output (tools/render pipeline) and prepared print files
 out/
 print-ready/
+__pycache__/
