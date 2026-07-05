@@ -5,3 +5,6 @@ modules/*.json
 demos/*.json
 generated
 *.disabled
+
+# local render output (tools/render pipeline)
+out/
