@@ -6,5 +6,6 @@ demos/*.json
 generated
 *.disabled
 
-# local render output (tools/render pipeline)
+# local render output (tools/render pipeline) and prepared print files
 out/
+print-ready/

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Check an STL's bounding box and connectivity against expectations.
 
-Usage: python tools/check_stl_bbox.py MODEL.stl EXPECTED_X EXPECTED_Y EXPECTED_Z [TOL_MM]
+Usage: python tools/check_stl_bbox.py MODEL.stl [EXPECTED_X EXPECTED_Y EXPECTED_Z [TOL_MM]]
 
 Fails (nonzero exit) if any bbox axis deviates by more than TOL_MM (default 0.1),
-or if the mesh is not a SINGLE connected shell. The shell check matters: OpenSCAD's
+or if the mesh is not a SINGLE connected shell. Without expected dimensions it just
+reports the bbox and verifies connectivity. The shell check matters: OpenSCAD's
 "manifold / genus 0" render status does NOT catch disjoint shells (e.g. a base
 accidentally severed from the walls by a subtraction).
 
@@ -45,10 +46,10 @@ def find(parent, a):
 
 
 def main():
-    if len(sys.argv) < 5:
+    if len(sys.argv) < 2 or len(sys.argv) in (3, 4):
         sys.exit(__doc__)
     path = sys.argv[1]
-    expected = [float(a) for a in sys.argv[2:5]]
+    expected = [float(a) for a in sys.argv[2:5]] if len(sys.argv) >= 5 else None
     tol = float(sys.argv[5]) if len(sys.argv) > 5 else 0.1
 
     verts = []
@@ -78,12 +79,16 @@ def main():
     lo = [min(v[i] for v in verts) for i in range(3)]
     hi = [max(v[i] for v in verts) for i in range(3)]
     size = [hi[i] - lo[i] for i in range(3)]
-    for axis, s, e in zip("XYZ", size, expected):
-        delta = s - e
-        status = "ok" if abs(delta) <= tol else "FAIL"
-        if status == "FAIL":
-            ok = False
-        print(f"{axis}: {s:9.3f} mm  (expected {e:9.3f}, delta {delta:+.3f})  {status}")
+    if expected:
+        for axis, s, e in zip("XYZ", size, expected):
+            delta = s - e
+            status = "ok" if abs(delta) <= tol else "FAIL"
+            if status == "FAIL":
+                ok = False
+            print(f"{axis}: {s:9.3f} mm  (expected {e:9.3f}, delta {delta:+.3f})  {status}")
+    else:
+        for axis, s in zip("XYZ", size):
+            print(f"{axis}: {s:9.3f} mm")
     print(f"bbox: [{lo[0]:.3f},{lo[1]:.3f},{lo[2]:.3f}] .. [{hi[0]:.3f},{hi[1]:.3f},{hi[2]:.3f}]  ({len(verts)} vertices, {ntris} triangles)")
 
     # connectivity: must be exactly one shell

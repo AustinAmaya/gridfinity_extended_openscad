@@ -7,7 +7,9 @@ Custom work lives on the `custom` branch; keep `main` clean for upstream sync.
 
 - `tools/render/` — dockerized OpenSCAD render + PNG-snapshot pipeline (ported from
   D:\202606-simpleBoxes). No local OpenSCAD needed, just Docker. See `tools/render/README.md`.
-- `tools/check_stl_bbox.py` — STL bounding-box verification.
+- `tools/slice/` — Bambu Studio print-prep: swaps rendered meshes into the version-tracked
+  `gridfinity-slicer-template.3mf` (H2D + PLA + Support-for-PLA config). See `tools/slice/README.md`.
+- `tools/check_stl_bbox.py` — STL bounding-box + shell-connectivity verification.
 - `gridfinity_paper_organizer.scad` — custom model (pattern below).
 - Everything else is upstream library code. Entry `.scad` files live at repo root;
   all real logic is in `modules/`.
@@ -28,6 +30,13 @@ shell. OpenSCAD's "manifold / Genus 0" render status does NOT catch disjoint she
 subtraction once severed the walls from the base and OpenSCAD still reported genus 0).
 For joints/seams, also render a close-up: intersect the model with a small cube around the
 joint in a throwaway .scad (see git history for out\_inspect_corner.scad) and snapshot it.
+
+The deliverable for a finished model is a **print-ready Bambu project .3mf**:
+
+```powershell
+.\tools\slice\print-prep.ps1 <model>.scad            # render + verify + template swap
+# -> print-ready\<model>.3mf : Austin opens it in Bambu Studio, slices, prints
+```
 
 - Views are calibrated: front = −Y, back = +Y, right = +X, top = +Z (fixture: `tools/render/_orient.scad`).
 - Model your parts with the front facing −Y so "front" snapshots mean what they say.
