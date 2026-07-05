@@ -19,7 +19,8 @@ mkdir -p "$outdir"
 
 size="${IMGSIZE:-1000,750}"; size="${size/x/,}"
 base="$(basename "${input%.scad}")"
-render_flag=(); [[ "${RENDER:-0}" == "1" ]] && render_flag=(--render)
+# NOTE: --render takes a value in OpenSCAD 2026 CLI; bare --render swallows the next arg.
+render_flag=(); [[ "${RENDER:-0}" == "1" ]] && render_flag=(--render=true)
 
 # Re-quote bare string -D values (same convention as render.sh).
 defs=()

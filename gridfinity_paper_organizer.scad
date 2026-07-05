@@ -52,8 +52,11 @@ skirt_run = max((ext_w - base_skirt_w)/2, (ext_d - base_skirt_d)/2);
 skirt_h = ceil(skirt_run * 2) / 2 + 0.3;    // 6.5
 
 foot_top = gfBaseHeight() - 0.25;           // 4.75, nominal top of the feet
-body_z0 = foot_top - 0.05;                  // slight overlap for a clean union
-cavity_z = foot_top + floor_t;              // 7.75, top of the interior floor
+body_z0 = foot_top;                         // body starts at the foot top, like standard bins;
+                                            // the oversize pad tops (to ~5.2) embed into it
+// the interior floor cannot start below the top of the chamfer skirt: below it the
+// exterior is narrower than the interior, which would sever the walls from the base
+cavity_z = max(foot_top + floor_t, body_z0 + skirt_h);   // 11.55, top of the interior floor
 rear_top = cavity_z + rear_height;          // 185.55
 front_top = cavity_z + front_height;        // 83.95
 total_h = rear_top;
@@ -85,27 +88,21 @@ module rrect(w, d, r, h) {
 
 module paper_organizer() {
   union() {
-    // gridfinity feet, clipped at their nominal top (pad tops are oversize for joining)
+    // gridfinity feet: pad tops are deliberately oversize (they rise ~0.45mm above
+    // foot_top and bulge outward) so they interpenetrate the body for a solid union,
+    // grid_block-style; trim that bulge to the body silhouette
     intersection() {
       translate([-base_w/2, -base_d/2, 0])
         pad_grid(base_units_x, base_units_y);
-      translate([0, 0, foot_top/2])
-        cube([base_w + 2, base_d + 2, foot_top], center = true);
+      union() {
+        translate([0, 0, foot_top/2 - 1])
+          cube([base_w + 2, base_d + 2, foot_top + 2], center = true);
+        body_solid();
+      }
     }
 
     difference() {
-      // body: chamfer skirt lofting from the base footprint out to the full
-      // exterior, then straight walls up to the rear top
-      union() {
-        hull() {
-          translate([0, 0, body_z0])
-            rrect(base_skirt_w, base_skirt_d, corner_r, fudge);
-          translate([0, 0, body_z0 + skirt_h])
-            rrect(ext_w, ext_d, corner_r, fudge);
-        }
-        translate([0, 0, body_z0 + skirt_h])
-          rrect(ext_w, ext_d, corner_r, rear_top - body_z0 - skirt_h);
-      }
+      body_solid();
 
       // interior cavity
       translate([0, 0, cavity_z])
@@ -115,6 +112,21 @@ module paper_organizer() {
       // front wall's inner-face top; each end wall stays flat across its thickness
       slope_cut();
     }
+  }
+}
+
+// the solid outer body: chamfer skirt lofting from the base footprint out to the
+// full exterior, then straight walls up to the rear top
+module body_solid() {
+  union() {
+    hull() {
+      translate([0, 0, body_z0])
+        rrect(base_skirt_w, base_skirt_d, corner_r, fudge);
+      translate([0, 0, body_z0 + skirt_h])
+        rrect(ext_w, ext_d, corner_r, fudge);
+    }
+    translate([0, 0, body_z0 + skirt_h])
+      rrect(ext_w, ext_d, corner_r, rear_top - body_z0 - skirt_h);
   }
 }
 
