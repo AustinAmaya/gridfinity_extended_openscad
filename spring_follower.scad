@@ -30,10 +30,10 @@
 /* [Size] */
 // total free length from base plate back face to follower front face, in mm (127 = 5in, 101.6 = 4in, 76.2 = 3in)
 total_length = 127;
-// overall width across the box (X); the compliant paper organizer interior is 118.9mm
+// overall width across the box (X); the compliant 2x6 paper organizer interior is 76.9mm
 // nominal - leave sliding clearance plus margin for interior fuzzy skin peaks (up to
 // 0.3/side if fuzzy is set to "contour and hole")
-width = 114;
+width = 73;
 // extrusion height (Z); also the follower height
 height = 70;
 
@@ -65,15 +65,21 @@ $fs = 0.4;
 spring_len = total_length - base_t - follower_t;
 half_periods = max(3, round(spring_len / half_period_target));
 col_spacing = columns > 1 ? (width - 2*(amplitude + leaf_t + 6)) / (columns - 1) : 0;
+// mirror-phased neighbors swing toward each other: they need 2*amplitude of spacing
+// or they cross and fuse. When the unit is too narrow for that, run columns in-phase
+// (constant gap at any deflection; lateral force is small and reacts on the box wall).
+alternate_phase = col_spacing >= 2*amplitude + leaf_t + 2;
 
 assert(spring_len > 20, "total_length leaves too little room for the spring");
 assert(columns >= 1, "columns must be >= 1");
+assert(columns == 1 || col_spacing >= leaf_t + 2, "columns too close together for this width");
 assert(amplitude + leaf_t/2 + 2 < width/2, "amplitude too large for width");
 assert(plate_chamfer < min(base_t, follower_t)/2 - 0.2, "plate_chamfer too large for plate thickness");
 
 echo(str("spring follower: total ", total_length, " x ", width, " x ", height,
   " mm | spring length ", spring_len, ", ", half_periods, " half-periods, leaf ",
-  leaf_t, "mm, amplitude ", amplitude, "mm, ", columns, " column(s)"));
+  leaf_t, "mm, amplitude ", amplitude, "mm, ", columns, " column(s), ",
+  alternate_phase ? "mirrored phase" : "in-phase (narrow)"));
 
 spring_follower();
 
@@ -82,11 +88,12 @@ function wave(y) = amplitude * sin(180 * half_periods * y / spring_len);
 
 module spring_follower() {
   union() {
-    // serpentine columns, alternating phase so lateral forces cancel
+    // serpentine columns; phases alternate (cancelling lateral force) only when
+    // the spacing allows - see alternate_phase above
     linear_extrude(height)
       for (c = [0 : columns - 1]) {
         cx = columns > 1 ? -col_spacing*(columns-1)/2 + c*col_spacing : 0;
-        phase = (c % 2 == 0) ? 1 : -1;
+        phase = (alternate_phase && c % 2 == 1) ? -1 : 1;
         translate([cx, 0])
           scale([phase, 1])
             leaf2d();

@@ -25,7 +25,7 @@ use <modules/module_gridfinity.scad>
 
 /* [Base] */
 // gridfinity base cells across the width (X)
-base_units_x = 3;
+base_units_x = 2;
 // gridfinity base cells along the depth (Y)
 base_units_y = 6;
 

@@ -85,9 +85,10 @@ supports, so don't design around them unless aesthetics call for it.
 
 ## Paper organizer spec (current: fully gridfinity-compliant)
 
-Base 3×6 units, body inside the standard bin envelope minus 0.3mm/side fuzzy allowance:
-exterior 124.9 × 250.9 × 185.55mm, walls/floor 3mm nominal, interior derived 118.9 × 244.9mm.
+Base 2×6 units, body inside the standard bin envelope minus 0.3mm/side fuzzy allowance:
+exterior 82.9 × 250.9 × 185.55mm, walls/floor 3mm nominal, interior derived 76.9 × 244.9mm.
 Rear wall 7in (177.8) / front wall 3in (76.2) interior heights at the inner faces, straight
 sloped top edge between them. No overhang, no chamfer skirt (both were v1, superseded when
-Austin required full compliance). Companion `spring_follower.scad` (PC, 114mm wide) presses
-stacks against a wall; sizes 3/4/5in via -Define total_length.
+Austin required full compliance). Companion `spring_follower.scad` (PC, 73mm wide) presses
+stacks against a wall; sizes 3/4/5in via -Define total_length. Its serpentine columns
+auto-fall-back to in-phase when the unit is too narrow for mirrored phases to clear.
