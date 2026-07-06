@@ -30,8 +30,10 @@
 /* [Size] */
 // total free length from base plate back face to follower front face, in mm (127 = 5in, 101.6 = 4in, 76.2 = 3in)
 total_length = 127;
-// overall width across the box (X); box interior is 88.9, leave sliding clearance
-width = 84;
+// overall width across the box (X); the compliant paper organizer interior is 118.9mm
+// nominal - leave sliding clearance plus margin for interior fuzzy skin peaks (up to
+// 0.3/side if fuzzy is set to "contour and hole")
+width = 114;
 // extrusion height (Z); also the follower height
 height = 70;
 

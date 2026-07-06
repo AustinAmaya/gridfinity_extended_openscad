@@ -1,81 +1,83 @@
-// Gridfinity Paper Organizer
-// A paper tray whose body overhangs its gridfinity base.
+// Gridfinity Paper Organizer - fully gridfinity-compliant, fuzzy-skin compensated
 //
-// The gridfinity foot pattern comes from this library (pad_grid); the body is custom
-// because the library does not support a body wider than its base, nor asymmetric
-// front/rear wall heights. The body is centered on the base and joined to the feet
-// with a >=45 degree chamfer skirt so the overhang prints without supports.
+// A paper tray on a 3x6 gridfinity base with asymmetric walls: tall rear, low front,
+// straight sloped top edge between them. Body sits entirely within the standard bin
+// envelope so organizers tile side-by-side on the grid.
 //
-// Orientation: front (low wall) faces -Y, rear (tall wall) faces +Y, matching the
-// tools/render snapshot camera convention (front view = camera at -Y).
+// FUZZY SKIN COMPENSATION: printed with Bambu Studio fuzzy skin (Perlin, thickness
+// 0.3, point distance 0.8, feature size 1, octaves 4, persistence 0.5, first layer
+// off). Bambu's FuzzySkin.cpp computes displacement r = noise * thickness applied
+// perpendicular to the wall, bidirectional: classic noise is uniform in [-1,1] (max
+// +0.3mm outward) and libnoise Perlin octave sums are unnormalized but in practice
+// stay within ~[-1,1]. So every exterior surface here - body AND feet - is inset
+// fuzzy_allowance (0.3mm) from its standard gridfinity envelope; fuzzy peaks then
+// just reach the envelope, preserving standard bin-to-bin and baseplate clearances.
+// Feet are shrunk via the library's $clearance environment (0.5 + 2*allowance).
+//
+// Wall thickness is 3mm NOMINAL (fuzzy modulates the outer surface +-0.3). The
+// interior is derived: envelope - 2*allowance - 2*wall. Interior heights are exact
+// at the wall inner faces.
+//
+// Orientation: front (low wall) faces -Y, matching the snapshot camera convention.
 
 include <modules/gridfinity_constants.scad>
 use <modules/module_gridfinity.scad>
 
-/* [Interior Dimensions (mm)] */
-// interior width, 3.5 inches
-interior_width = 88.9;
-// interior depth (front to rear), 8.5 inches
-interior_depth = 215.9;
+/* [Base] */
+// gridfinity base cells across the width (X)
+base_units_x = 3;
+// gridfinity base cells along the depth (Y)
+base_units_y = 6;
+
+/* [Walls (mm)] */
 // interior height of the rear wall, 7 inches
 rear_height = 177.8;
 // interior height of the front wall, 3 inches
 front_height = 76.2;
-
-/* [Construction] */
-// wall thickness
+// nominal wall thickness
 wall = 3;
 // floor thickness above the gridfinity feet
 floor_t = 3;
-// gridfinity base cells across the width (X)
-base_units_x = 2;
-// gridfinity base cells along the depth (Y)
-base_units_y = 5;
+
+/* [Fuzzy Skin] */
+// per-side inset so fuzzy skin peaks stay inside the gridfinity envelope; equals the
+// slicer's fuzzy skin thickness (max outward displacement, see header). 0 = no fuzzy.
+fuzzy_allowance = 0.3;
 
 /* [Hidden] */
 $fa = 4;
 $fs = 0.4;
 fudge = 0.01;
 
-// --- derived dimensions ---
-ext_w = interior_width + 2*wall;            // 94.9
-ext_d = interior_depth + 2*wall;            // 221.9
-base_w = base_units_x * gf_pitch;           // 84
-base_d = base_units_y * gf_pitch;           // 210
-// feet are inset from the cell grid by the standard clearance
-base_skirt_w = base_w - 0.5;
-base_skirt_d = base_d - 0.5;
-overhang_x = (ext_w - base_w) / 2;          // 5.45
-overhang_y = (ext_d - base_d) / 2;          // 5.95
-// chamfer skirt must rise at least as much as the widest overhang run (>=45 deg)
-skirt_run = max((ext_w - base_skirt_w)/2, (ext_d - base_skirt_d)/2);
-skirt_h = ceil(skirt_run * 2) / 2 + 0.3;    // 6.5
+// standard bin envelope for this base, then inset for fuzzy skin
+base_w = base_units_x * gf_pitch;                    // 126
+base_d = base_units_y * gf_pitch;                    // 252
+ext_w = base_w - 0.5 - 2*fuzzy_allowance;            // 124.9
+ext_d = base_d - 0.5 - 2*fuzzy_allowance;            // 250.9
+interior_width = ext_w - 2*wall;                     // 118.9
+interior_depth = ext_d - 2*wall;                     // 244.9
 
-foot_top = gfBaseHeight() - 0.25;           // 4.75, nominal top of the feet
-body_z0 = foot_top;                         // body starts at the foot top, like standard bins;
-                                            // the oversize pad tops (to ~5.2) embed into it
-// the interior floor cannot start below the top of the chamfer skirt: below it the
-// exterior is narrower than the interior, which would sever the walls from the base
-cavity_z = max(foot_top + floor_t, body_z0 + skirt_h);   // 11.55, top of the interior floor
-rear_top = cavity_z + rear_height;          // 185.55
-front_top = cavity_z + front_height;        // 83.95
+foot_top = gfBaseHeight() - 0.25;                    // 4.75, nominal top of the feet
+cavity_z = foot_top + floor_t;                       // 7.75, top of the interior floor
+rear_top = cavity_z + rear_height;                   // 185.55
+front_top = cavity_z + front_height;                 // 83.95
 total_h = rear_top;
 
-corner_r = gf_cup_corner_radius;            // 3.75
+corner_r = gf_cup_corner_radius - fuzzy_allowance;   // envelope corner is 3.75 nominal
 corner_r_int = max(corner_r - wall, 0.5);
 
-// --- requirement checks ---
-assert(ext_w < 3 * gf_pitch,
-  str("exterior width ", ext_w, " must be strictly less than 3 gridfinity units (", 3*gf_pitch, ")"));
-assert(overhang_x < gf_pitch/2,
-  str("width overhang per side ", overhang_x, " must be strictly less than half a unit (", gf_pitch/2, ")"));
-assert(overhang_y < gf_pitch/2,
-  str("depth overhang per side ", overhang_y, " must be strictly less than half a unit (", gf_pitch/2, ")"));
+assert(fuzzy_allowance >= 0, "fuzzy_allowance must be >= 0");
+assert(interior_width > 0 && interior_depth > 0, "interior collapsed - check base units / wall");
 assert(rear_height >= front_height, "rear wall must be at least as tall as the front wall");
+// full compliance: fuzzy peaks must not exceed the standard envelope
+assert(ext_w + 2*fuzzy_allowance <= base_w - 0.5 + fudge, "width exceeds gridfinity envelope");
+assert(ext_d + 2*fuzzy_allowance <= base_d - 0.5 + fudge, "depth exceeds gridfinity envelope");
 
-echo(str("exterior: ", ext_w, " x ", ext_d, " x ", total_h,
-  " | base: ", base_units_x, "x", base_units_y, " (", base_w, " x ", base_d, ")",
-  " | overhang per side: x=", overhang_x, " y=", overhang_y));
+echo(str("paper organizer: base ", base_units_x, "x", base_units_y,
+  " | exterior ", ext_w, " x ", ext_d, " x ", total_h,
+  " (envelope ", base_w - 0.5, " x ", base_d - 0.5, ", fuzzy allowance ", fuzzy_allowance, "/side)",
+  " | interior ", interior_width, " x ", interior_depth,
+  " | rear/front interior heights ", rear_height, "/", front_height));
 
 paper_organizer();
 
@@ -88,12 +90,15 @@ module rrect(w, d, r, h) {
 
 module paper_organizer() {
   union() {
-    // gridfinity feet: pad tops are deliberately oversize (they rise ~0.45mm above
-    // foot_top and bulge outward) so they interpenetrate the body for a solid union,
-    // grid_block-style; trim that bulge to the body silhouette
+    // gridfinity feet, inset by fuzzy_allowance via the clearance environment.
+    // Pad tops are deliberately oversize (rise above foot_top, bulge outward) so
+    // they interpenetrate the body, grid_block-style; trim the bulge to the body.
     intersection() {
-      translate([-base_w/2, -base_d/2, 0])
-        pad_grid(base_units_x, base_units_y);
+      union() {
+        $clearance = [0.5 + 2*fuzzy_allowance, 0.5 + 2*fuzzy_allowance, 0];
+        translate([-base_w/2, -base_d/2, 0])
+          pad_grid(base_units_x, base_units_y);
+      }
       union() {
         translate([0, 0, foot_top/2 - 1])
           cube([base_w + 2, base_d + 2, foot_top + 2], center = true);
@@ -115,19 +120,10 @@ module paper_organizer() {
   }
 }
 
-// the solid outer body: chamfer skirt lofting from the base footprint out to the
-// full exterior, then straight walls up to the rear top
+// the solid outer body: straight prism on the (fuzzy-inset) bin envelope
 module body_solid() {
-  union() {
-    hull() {
-      translate([0, 0, body_z0])
-        rrect(base_skirt_w, base_skirt_d, corner_r, fudge);
-      translate([0, 0, body_z0 + skirt_h])
-        rrect(ext_w, ext_d, corner_r, fudge);
-    }
-    translate([0, 0, body_z0 + skirt_h])
-      rrect(ext_w, ext_d, corner_r, rear_top - body_z0 - skirt_h);
-  }
+  translate([0, 0, foot_top])
+    rrect(ext_w, ext_d, corner_r, rear_top - foot_top);
 }
 
 module slope_cut() {

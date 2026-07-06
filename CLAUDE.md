@@ -43,6 +43,17 @@ The deliverable for a finished model is a **print-ready Bambu project .3mf**:
 - `out/` is git-ignored; renders are ephemeral.
 - `-Define key=val` overrides customizer params on either script.
 
+## Fuzzy skin compensation (Austin prints containers with fuzzy skin)
+
+Bambu Studio fuzzy skin (FuzzySkin.cpp) displaces the outer wall by r = noise * thickness,
+bidirectional, perpendicular to the wall. Classic noise is uniform [-1,1] → max outward =
+full thickness; Perlin octave sums are unnormalized but practically within ~[-1,1]. Austin's
+profile: Perlin, thickness 0.3 → allow **0.3mm/side**. For gridfinity-compliant parts, inset
+EVERY exterior surface by that allowance from its standard envelope — body walls AND feet
+(feet via `$clearance = [0.5 + 2*allowance, 0.5 + 2*allowance, 0]` around the pad_grid call).
+Fuzzy peaks then just reach the standard envelope; bin-to-bin and baseplate clearances hold.
+Wall thickness stays nominal (fuzzy modulates the surface); interior dims are derived.
+
 ## Pattern: custom body on a gridfinity base
 
 The library does NOT support a body that overhangs its base or asymmetric wall heights.
@@ -72,9 +83,11 @@ Bambu Lab H2D: dual nozzle, build volume 300 × 320 × 325mm (dual-nozzle). PLA 
 "Support for PLA" as dedicated support material — horizontal overhangs print well with
 supports, so don't design around them unless aesthetics call for it.
 
-## Paper organizer spec (the proof-of-concept)
+## Paper organizer spec (current: fully gridfinity-compliant)
 
-Interior 3.5in × 8.5in (88.9 × 215.9mm); rear wall 7in (177.8), front wall 3in (76.2),
-straight sloped top edge between the inner faces; walls/floor 3mm; base 2×5 units, no magnets;
-exterior 94.9 × 221.9 × 189.35mm (must stay strictly < 126mm wide = 3 units). The interior
-floor sits at the chamfer-skirt top (z=11.55), which is what sets the 189.35 height.
+Base 3×6 units, body inside the standard bin envelope minus 0.3mm/side fuzzy allowance:
+exterior 124.9 × 250.9 × 185.55mm, walls/floor 3mm nominal, interior derived 118.9 × 244.9mm.
+Rear wall 7in (177.8) / front wall 3in (76.2) interior heights at the inner faces, straight
+sloped top edge between them. No overhang, no chamfer skirt (both were v1, superseded when
+Austin required full compliance). Companion `spring_follower.scad` (PC, 114mm wide) presses
+stacks against a wall; sizes 3/4/5in via -Define total_length.
