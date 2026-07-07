@@ -14,8 +14,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends xvfb xauth \
     && rm -rf /var/lib/apt/lists/*
 
-# Shared library search path. Mount shared .scad include dirs here at run time
-# (e.g. the gridfinity-rebuilt library) so `include <...>` resolves.
+# Shared library search path. Mount any external .scad include dirs here at run time
+# so `include <...>` resolves. (This repo's own includes are repo-relative and resolve
+# via the /work mount, so nothing needs mounting here for the current models.)
 ENV OPENSCADPATH=/libs
 
 COPY render.sh   /usr/local/bin/render
