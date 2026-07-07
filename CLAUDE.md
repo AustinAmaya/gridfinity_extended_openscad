@@ -54,6 +54,16 @@ EVERY exterior surface by that allowance from its standard envelope — body wal
 Fuzzy peaks then just reach the standard envelope; bin-to-bin and baseplate clearances hold.
 Wall thickness stays nominal (fuzzy modulates the surface); interior dims are derived.
 
+## BOSL2 (vendored at lib/BOSL2, git submodule, BSD-2-Clause)
+
+`include <lib/BOSL2/std.scad>` (+ `rounding.scad` for offset_sweep). House rule from Austin:
+**pockets/cutouts get a 45° lead-in chamfer** on their openings. Do it the BOSL2 way — give
+the CUTTER solid a NEGATIVE top chamfer so the subtraction leaves a positive chamfer:
+- round pocket: `cyl(d=…, h=…, chamfer2=-c, anchor=BOT)`
+- rounded-rect pocket: `offset_sweep(rect([w,d], rounding=r), height=…, top=os_chamfer(-c))`
+Include chamfer flare (`+2*c`) in wall/margin asserts. BOSL2 coexists fine with the ostat
+includes (no namespace collisions as of v2.0.747). See thermocell_and_refill.scad.
+
 ## Pattern: custom body on a gridfinity base
 
 The library does NOT support a body that overhangs its base or asymmetric wall heights.

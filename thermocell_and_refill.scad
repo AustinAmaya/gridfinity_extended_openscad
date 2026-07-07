@@ -9,6 +9,8 @@
 //
 // Orientation: rectangle pocket toward the front (-Y), cylinder toward the back (+Y).
 
+include <lib/BOSL2/std.scad>
+include <lib/BOSL2/rounding.scad>
 include <modules/gridfinity_constants.scad>
 use <modules/module_gridfinity.scad>
 
@@ -29,6 +31,9 @@ rect_depth = 79.502;
 rect_corner_r = 3;
 // pocket depth, 2 inches
 pocket_depth = 50.8;
+// 45-degree lead-in chamfer around each pocket opening (BOSL2 negative chamfer on
+// the cutter solid leaves a positive chamfer on the pocket)
+pocket_chamfer = 2;
 
 /* [Construction] */
 // solid floor thickness beneath the pockets
@@ -60,9 +65,10 @@ cyl_cy  =  ext_d/2 - gap - cyl_diameter/2;           // cylinder toward back
 
 // requirement / sanity checks
 assert(fuzzy_allowance >= 0, "fuzzy_allowance must be >= 0");
-assert(cyl_diameter + 6 <= ext_w, "cylinder pocket too wide for the plate");
-assert(rect_width + 6 <= ext_w, "rectangle pocket too wide for the plate");
-assert(gap >= 3, "pockets leave too little material along the length; reduce a pocket or add depth");
+assert(cyl_diameter + 2*pocket_chamfer + 6 <= ext_w, "cylinder pocket (incl. chamfer) too wide for the plate");
+assert(rect_width + 2*pocket_chamfer + 6 <= ext_w, "rectangle pocket (incl. chamfer) too wide for the plate");
+assert(gap - 2*pocket_chamfer >= 3, "pockets (incl. chamfers) leave too little material along the length");
+assert(pocket_chamfer < pocket_depth, "pocket_chamfer must be smaller than pocket_depth");
 assert(pocket_depth + floor_t + foot_top <= total_h + fudge, "pocket deeper than the plate");
 assert(ext_w + 2*fuzzy_allowance <= base_w - 0.5 + fudge, "width exceeds gridfinity envelope");
 assert(ext_d + 2*fuzzy_allowance <= base_d - 0.5 + fudge, "depth exceeds gridfinity envelope");
@@ -102,13 +108,19 @@ module thermocell_and_refill() {
     difference() {
       body_solid();
 
-      // round pocket (Thermacell unit)
+      // round pocket (Thermacell unit): negative top chamfer on the cutter
+      // flares it outward, leaving a lead-in chamfer on the pocket opening
       translate([0, cyl_cy, total_h - pocket_depth])
-        cylinder(d = cyl_diameter, h = pocket_depth + fudge);
+        cyl(d = cyl_diameter, h = pocket_depth + fudge,
+            chamfer2 = -pocket_chamfer, anchor = BOT);
 
-      // rectangular pocket (refill box)
+      // rectangular pocket (refill box): offset_sweep of the rounded rect with a
+      // negative (outward-flaring) top chamfer
       translate([0, rect_cy, total_h - pocket_depth])
-        rrect(rect_width, rect_depth, rect_corner_r, pocket_depth + fudge);
+        offset_sweep(
+          rect([rect_width, rect_depth], rounding = rect_corner_r),
+          height = pocket_depth + fudge,
+          top = os_chamfer(-pocket_chamfer));
     }
   }
 }
